@@ -1,0 +1,794 @@
+/* Payong — minimal field-instrument UI
+   Flat panels, hairline borders, one restrained accent. No gradients, no
+   blur, no soft shadows, no playful shapes. */
+
+:root {
+  --bg: #101214;
+  --panel: rgba(16, 18, 20, 0.86);
+  --panel-solid: #15181b;
+  --line: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --text: #e8eaed;
+  --text-dim: #a2a8b0;
+  --text-faint: #6b7077;
+  --accent: #38bdf8;
+  --accent-soft: rgba(56, 189, 248, 0.12);
+  --accent-tint: #7dd3fc;
+  --radius: 3px;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button {
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.app {
+  position: relative;
+  height: 100%;
+}
+
+/* Chrome layer: full-screen shell that owns all UI overlays. No z-index,
+   so it creates no stacking context and children keep their global order.
+   pointer-events disabled so map clicks fall through the gaps. */
+.ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ui > * {
+  pointer-events: auto;
+}
+
+.weather-map {
+  position: relative;
+  z-index: 0;
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+  background: var(--bg);
+}
+
+/* Keep Leaflet corner controls (zoom button) clear of device notches and
+   home bars. env() is 0 everywhere on desktop, so nothing shifts there. */
+.leaflet-container .leaflet-top,
+.leaflet-container .leaflet-bottom {
+  margin: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* ── Shared panel ─────────────────────────────────────────────────────── */
+
+.legend,
+.banner,
+.controls,
+.status {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+/* ── Header (full-width bar) ──────────────────────────────────────────── */
+
+.controls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2200;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: calc(7px + env(safe-area-inset-top)) 12px 7px
+    calc(12px + env(safe-area-inset-left));
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+}
+
+.controls__brand {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.controls__buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.controls__button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.controls__button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.controls__button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.controls__button--active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 -1px 0 var(--accent);
+}
+
+.controls__button--active svg {
+  color: var(--accent);
+}
+
+/* ── Status footer (full-width bar) ───────────────────────────────────── */
+
+.status {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  padding: 8px 12px calc(10px + env(safe-area-inset-bottom))
+    calc(12px + env(safe-area-inset-left));
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+
+.status__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status__updated {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.status__pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.status__refresh {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.status__refresh:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.status__bottom {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.status__copyright a {
+  color: var(--text-dim);
+  text-decoration: none;
+}
+
+.status__copyright a:hover {
+  color: #fff;
+}
+
+/* ── Rain legend (dropdown under the header Legend button) ────────────── */
+
+.controls__legend {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.legend {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 2200;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+}
+
+.legend__list {
+  padding: 4px 0;
+  list-style: none;
+  max-height: calc(100dvh - 140px);
+  overflow-y: auto;
+}
+
+.legend__chevron {
+  color: var(--text-faint);
+  transition: transform 150ms ease;
+}
+
+.legend__chevron--open {
+  transform: rotate(180deg);
+}
+
+.legend__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px;
+}
+
+.legend__chip {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.legend__row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.legend__row-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.legend__row-unit {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.legend__row-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* ── Banners ──────────────────────────────────────────────────────────── */
+
+.banners {
+  position: absolute;
+  top: calc(52px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  max-width: min(520px, calc(100vw - 32px));
+  font-size: 12px;
+  color: var(--text);
+}
+
+.banner + .banner {
+  margin-top: 4px;
+}
+
+.banner--error {
+  border-color: var(--accent);
+}
+
+.banner--error span {
+  color: var(--text);
+}
+
+.banner button {
+  padding: 3px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--accent-tint);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.banner button:hover {
+  background: var(--accent);
+  color: #0b1620;
+}
+
+/* ── Loading overlay ──────────────────────────────────────────────────── */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(8, 10, 12, 0.55);
+}
+
+.overlay__spinner {
+  color: var(--text-dim);
+  animation: spin 1s linear infinite;
+}
+
+.overlay__text {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Zoom controls (map side rail) ────────────────────────────────────── */
+
+.zoom-controls {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  z-index: 800;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.zoom-controls__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.zoom-controls__button + .zoom-controls__button {
+  border-top: 1px solid var(--line);
+}
+
+.zoom-controls__button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.zoom-controls__button:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Weather markers ──────────────────────────────────────────────────── */
+
+.weather-marker-icon {
+  background: none;
+  border: 0;
+}
+
+.weather-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(10, 12, 14, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius);
+  padding: 4px 6px 3px;
+  cursor: pointer;
+  gap: 1px;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.weather-marker:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.weather-marker__main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.weather-marker__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-tint);
+}
+
+.weather-marker__icon svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+}
+
+.weather-marker__temp {
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.weather-marker__city {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 44px;
+}
+
+/* ── Forecast panel (below header, not anchored to the map) ───────────── */
+
+.forecast-panel {
+  position: absolute;
+  top: calc(56px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2100;
+  width: min(340px, calc(100vw - 16px));
+  max-height: calc(100dvh - 76px);
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px 10px 14px;
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.forecast-panel .popup {
+  min-width: 0;
+  padding: 0;
+}
+
+.forecast-panel .popup__header {
+  padding-right: 26px;
+}
+
+.forecast-panel__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.forecast-panel__close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* ── Locate FAB (bottom right, above footer) ──────────────────────────── */
+
+.locate-fab {
+  position: absolute;
+  right: 16px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: var(--panel-solid);
+  color: var(--accent-tint);
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.locate-fab:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.locate-fab:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.locate-fab__spinner {
+  color: var(--accent);
+  animation: spin 1s linear infinite;
+}
+
+/* ── Forecast content ─────────────────────────────────────────────────── */
+
+.popup {
+  min-width: 200px;
+  padding: 12px 14px 10px;
+}
+
+.popup__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.popup__city {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.popup__province {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.popup__code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-tint);
+  padding: 4px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+}
+
+.popup__code svg {
+  display: block;
+}
+
+.popup__body {
+  margin-top: 10px;
+}
+
+.popup__temp {
+  font-size: 27px;
+  font-weight: 620;
+  line-height: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.popup__feels {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-dim);
+}
+
+.popup__condition {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.popup__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.popup__stat {
+  padding: 6px 2px;
+}
+
+.popup__stat + .popup__stat {
+  border-left: 1px solid var(--line);
+  padding-left: 8px;
+}
+
+.popup__stat-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.popup__stat-value {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+.popup__forecast {
+  margin-top: 4px;
+}
+
+.popup__day {
+  display: grid;
+  grid-template-columns: 2fr 1fr 2fr 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.popup__day-name {
+  color: var(--text-dim);
+}
+
+.popup__day-code {
+  display: flex;
+  align-items: center;
+  color: var(--text-dim);
+}
+
+.popup__day-code svg {
+  display: block;
+}
+
+.popup__day-range {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.popup__day-rain {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent-tint);
+}
+
+.popup__footnote {
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.popup__expand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 5px 0;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.popup__expand:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+/* ── Small screens ────────────────────────────────────────────────────── */
+
+@media (max-width: 560px) {
+  .controls {
+    gap: 8px;
+    padding: calc(7px + env(safe-area-inset-top)) 10px 7px
+      calc(10px + env(safe-area-inset-left));
+  }
+
+  .controls__label {
+    display: none;
+  }
+
+  .controls__button {
+    padding: 6px 9px;
+  }
+
+  .status {
+    padding: 8px 10px calc(10px + env(safe-area-inset-bottom))
+      calc(10px + env(safe-area-inset-left));
+  }
+
+  .status__bottom {
+    white-space: normal;
+    text-align: right;
+  }
+}
