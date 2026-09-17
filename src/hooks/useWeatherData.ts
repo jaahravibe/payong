@@ -87,6 +87,7 @@ export function useWeatherData(requestedCities: City[]) {
   const refresh = useCallback(async () => {
     const cities = loadedCitiesRef.current;
     if (cities.length === 0) return;
+    setLoading(true);
     try {
       const results = await fetchWeatherForCities(cities);
       if (results.length === 0) return;
@@ -100,6 +101,8 @@ export function useWeatherData(requestedCities: City[]) {
       setError(null);
     } catch (e) {
       setError(friendlyError(e));
+    } finally {
+      setLoading(false);
     }
   }, []);
 

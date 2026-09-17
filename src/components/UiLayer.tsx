@@ -52,7 +52,7 @@ export function UiLayer({
         onToggleClouds={onToggleClouds}
         loading={loading}
       />
-      <StatusBar lastUpdated={lastUpdated} onRefresh={onRefresh} />
+      <StatusBar lastUpdated={lastUpdated} loading={loading} onRefresh={onRefresh} />
       <ForecastPanel selected={selected} onDismiss={onDismissSelection} />
       <LocateFab locating={locating} onLocate={onLocate} />
 

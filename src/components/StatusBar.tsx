@@ -1,15 +1,26 @@
-import { RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 
 interface StatusBarProps {
   lastUpdated?: Date | null;
+  loading: boolean;
   onRefresh: () => void;
 }
 
-export function StatusBar({ lastUpdated, onRefresh }: StatusBarProps) {
+export function StatusBar({ lastUpdated, loading, onRefresh }: StatusBarProps) {
   return (
     <div className="status">
       <div className="status__top">
-        {lastUpdated && (
+        {loading ? (
+          <span className="status__updated">
+            <Loader2
+              size={12}
+              strokeWidth={1.75}
+              className="status__spinner"
+              aria-hidden="true"
+            />
+            Updating…
+          </span>
+        ) : lastUpdated ? (
           <span className="status__updated">
             <span className="status__pulse" aria-hidden="true" />
             Updated{" "}
@@ -18,7 +29,7 @@ export function StatusBar({ lastUpdated, onRefresh }: StatusBarProps) {
               minute: "2-digit",
             })}
           </span>
-        )}
+        ) : null}
         <button
           type="button"
           className="status__refresh"

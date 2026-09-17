@@ -204,6 +204,11 @@ a {
   background: var(--accent);
 }
 
+.status__spinner {
+  color: var(--accent);
+  animation: spin 1s linear infinite;
+}
+
 .status__refresh {
   display: flex;
   align-items: center;
