@@ -40,21 +40,16 @@ npm run lint
 
 ## Deploy to GitHub Pages
 
-The project uses relative asset paths (`base: "./"`), so it works under any subpath.
+Deployment is handled by a GitHub Actions workflow (`.github/workflows/deploy.yml`)
+that builds the app and deploys `dist/` on every push to `main`.
 
-1. Push the repo to GitHub.
-2. Create `gh-pages`:
-   ```bash
-   npm install -D gh-pages
-   ```
-3. Add to `package.json`:
-   ```json
-   "scripts": {
-     "deploy": "npm run build && npx gh-pages -d dist"
-   }
-   ```
-4. `npm run deploy` → app live at `https://<user>.github.io/payong/`
-   (or use a GitHub Actions workflow instead).
+1. Enable GitHub Pages in **Settings → Pages**, with **Source** set to
+   **GitHub Actions**.
+2. Push to `main` (or run the workflow manually via the **Actions** tab).
+3. App is live at `https://<user>.github.io/payong/`, with each deploy
+   recorded under the repo's **Deployments** section.
+
+The project uses relative asset paths (`base: "./"`), so it works under any subpath.
 
 ## Project layout
 
